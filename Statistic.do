@@ -1,5 +1,5 @@
 
-*-----1-dataset describe---------------
+*-----1-Dataset describe---------------
 
 *---basic characters--
 
@@ -87,7 +87,7 @@ drop _merge
 save "D:\真菌分析\data_pre\repeat_g_mapping.dta",replace
 
 
-*----------------2-Repeat datasets compare-----
+*----------------2-Repeat datasets analyses-----
 
 *--2.1-----DMM clusters analyses------
 
@@ -117,9 +117,9 @@ by cluster: su shannon observed_features pielou_evenness faith_pd
 gr box observed_features,over(cluster)
 table1, by(cluster) vars(shannon contn \ observed_features contn\ pielou_evenness contn \ faith_pd contn  )format(%8.2f) onecol test pdp(2) saving (D:\真菌分析\cluster_phenotype.xlsx, replace)
 
-*--2.1.1--DMM clusters and phenotype-
+*--2.1.2--DMM clusters and phenotype-
 
-*--statistic analysis--
+*--description --
 
 *----15----
 
@@ -141,86 +141,6 @@ merge m:m Idind using "D:\真菌分析\data_pre\repeatDMM_cluster.dta",force
 keep if time==18
 tab cluster
 table1, by(cluster) vars(age contn \ sex cat \BMI contn\ wc contn \ hpc contn \ district cat\ city cat\education cat\ marrige cat\ smoke cat\  alcohol cat\ income contn\ city_score contn\ SBP contn \ DBP contn \ HDL_C contn \ LDL_C contn \ ins contn \ HbA1c contn \ glucose contn \ DBP contn \tg contn \  tc contn \t2d cat  \  hyper_med cat\ xinjigengse cat\ zhongfeng cat\ cancer cat\ diabetes_med cat\ hyp cat \dys cat\ pret2d cat\ gut_disease cat\ fuxie cat\ antibiotic_current cat\ antibiotic_6month cat\ probiotics cat\ kangyan_med cat\ kangsuan_med cat\ weisuan_med cat\changdao_shoushu cat\ yogurt_drink cat\ pet cat \ famine cat\ wheat contn \ rice contn \cereoth contn \tuber contn \dryleg contn \legpro contn \dveg contn \lveg contn \saltveg contn \fruit contn \nuts contn \pork contn \othmeat contn \orgmeat contn \poultry contn \milk contn \egg contn \fish contn \OIL_VEG contn \OIL_ANI contn \cake contn \sugar contn \salt contn \sauce contn \others contn \pastes contn)format(%8.2f) onecol test pdp(2) saving (D:\真菌分析\cluster_phenotype_18.xlsx, replace)
-
-*--phenotype predict analysis---
-
-*---2015--
-
-use  "D:\真菌分析\data_pre\2015_all_phenotype.dta",clear
-rename idind Idind
-merge m:m Idind using "D:\真菌分析\data_pre\repeatDMM_cluster.dta",force
-keep if time==15
-gen veg=dveg+lveg
-sort cluster
-by cluster:su city_score
-
-*-all data-
-
-keep SampleID age t2d city education marrige veg smoke alcohol hyper_med xinjigengse-cancer MET city_score income hpc-sex BMI-dys rice-antibiotic_current antibiotic_6month probiotics-pet cluster
-
-*--all diet related data--
-
-keep SampleID smoke alcohol MET wheat-pastes veg cluster
-
-preserve
-replace cluster=0 if cluster!=1
-rename cluster outcome
-tab outcome
-save "D:\真菌分析\data_pre\15cluster_predict1.dta",replace
-restore
-
-preserve
-gen outcome=0
-replace outcome=1 if cluster==2
-drop cluster
-tab outcome
-save "D:\真菌分析\data_pre\15cluster_predict2.dta",replace
-restore
-
-preserve
-gen outcome=0
-replace outcome=1 if cluster==3
-drop cluster
-tab outcome
-save "D:\真菌分析\data_pre\15cluster_predict3.dta",replace
-restore
-
-preserve
-gen outcome=0
-replace outcome=1 if cluster==4
-drop cluster
-tab outcome
-save "D:\真菌分析\data_pre\15cluster_predict4.dta",replace
-restore
-
-
-preserve
-keep if cluster==3| cluster==4
-gen outcome=0
-replace outcome=1 if cluster==4
-drop cluster
-tab outcome
-save "D:\真菌分析\data_pre\15cluster_predict5.dta",replace // AUC=0.85 (all data)
-restore
-
-*---2018--
-
-use  "D:\真菌分析\data_pre\2018_all_phenotype.dta",clear
-rename idind Idind
-drop _merge
-merge m:m Idind using "D:\真菌分析\data_pre\repeatDMM_cluster.dta",force
-keep if time==18
-rename Idind SampleID
-keep SampleID age t2d city education marrige smoke alcohol hyper_med xinjigengse-cancer MET city_score income hpc-sex BMI-dys rice-antibiotic_current antibiotic_6month probiotics-pet cluster
-
-preserve
-keep if cluster==3| cluster==4
-gen outcome=0
-replace outcome=1 if cluster==4
-drop cluster
-tab outcome
-save "D:\真菌分析\data_pre\18cluster_predict5.dta",replace // AUC=0.85
-restore
 
 *----2.1.2--DMM clusters transport
 
@@ -298,7 +218,7 @@ restore
 \repeatDMM_cluster.dta",clear
 tab time
 
-*-------GEE modle for fungi-diseases associations dataset prepare--
+*----2.1.3---GEE modle for fungi-diseases associations dataset prepare--
 
 use "D:\真菌分析\data_pre\repeatDMM_cluster.dta",clear
 gen ID=time+Idind
@@ -332,9 +252,9 @@ foreach phenotype of varlist t2d dys hyp marrige  smoke alcohol xinjigengse zhon
 misstable sum  t2d dys hyp age sex   smoke alcohol city income fruit  pork veg milk fish antibiotic_current MET
 save   "D:\真菌分析\data_pre\cluster_gee_.dta",replace
 
-*----2.1.3-----DMM clusters and metabolism----
+*----2.1.4-----DMM clusters and metabolism----
 
-*------Predict clusters dataset-----
+*------Predictive clusters dataset-----
 
 use "D:\CNHS\data\phenotype data\2015update_20220426\chns_2015_westlake.dta",clear
 duplicates drop Idind,force // 13315
@@ -425,32 +345,6 @@ keep SampleID cluster MEDN1863	MEDN1445	MEDP1693	MEDN2099	MEDN1004	MEDP0052	MEDP
 save "D:\真菌分析\data_pre\metabolism_cluster12raw.dta",replace
 restore
 
-*----------Validated on the 2018 datasets-------------------
-
-use  "D:\真菌分析\data_pre\metabolism_18.dta",clear
-merge m:m Idind using "D:\真菌分析\data_pre\repeatDMM_18cluster.dta"
-keep if _merge==3
-tab cluster
-sort cluster
-by cluster:su MEDN0390
-
-foreach metabolism of varlist CMPF_N-mwxq04_N {
-	gen ln_`metabolism'=log(`metabolism') 
-	drop `metabolism'
-	rename ln_`metabolism' `metabolism'
-}
-keep SampleID cluster CMPF_N-mwxq04_N
-
-preserve
-keep if cluster==4 | cluster==3
-gen outcome=0
-replace outcome=1 if cluster==4
-tab outcome
-drop cluster
-keep SampleID outcome MEDN1863	MEDN1445	MEDP1693	MEDN2099	MEDN1004	MEDP0052	MEDP1003	MEDP1126	MEDN1231	MEDP1424	MEDN0846	MEDP1404	MEDN0551	MEDP1919	MEDP0401	MEDP1954	MEDN1740	MEDN1753	MEDN1699	MEDN2197	MEDP2266	MEDP1255	MEDN1092	MEDP1670	MEDN1193	MEDN0071	MEDN1029	MEDP2132	MEDP0022	MEDN0729	MEDN1442	MEDN0431	MEDN1854	MEDP0006	MEDP0174	MEDP2325	MEDP0313	MEDN1708	MEDN0065	MEDP0325	MEDN0579	MEDN0754	MEDP2672	MEDN0105	MEDP2494	MEDP2088	MEDP2131	MEDP1321	MEDN0589	MEDN1440	MEDN0261	MEDN1441	MEDN1444	MEDP2633	MEDN0807	MEDP1061	MEDN1279	MEDN0364	MEDN0536	MEDN0340	MEDP0251	MEDN0100	MEDP1778	MEDP0026	MEDN0478	MEDN0682	MEDN1686	MEDN0011	MEDN2103	MEDN0661	MEDN0062	MEDN0072	MEDN1576	MEDP0389	MEDN0826	MEDN0398	MEDN0227	MEDN1221	MEDN0463	MEDP0453	MEDP2431	MEDP2223	MEDN0616	MEDP1045	MEDN1246	MEDP1928	MEDP0598	MEDN1861	MEDP1318	MEDP1319	MEDN0403	MEDP0296	MEDN0115	MEDN1965	MEDN1902	MEDN1126	MEDN1723	MEDN1077	MEDP2176	MEDN2111	MEDN1532	MEDN1943	MEDP1803	MEDN0658	MEDN0769	MEDN1613	MEDN1853	MEDP1885	MEDP1201	MEDP1002	MEDP1242	MEDP1488	MEDN0179	MEDN1264	MEDN1265	MEDN0348	MEDN2142	MEDN0511	MEDN1927	MEDP2334	MEDN1862	MEDP2283	MEDN1156	MEDN1640	MEDN0335	MEDN0201	MEDN1566	MEDP0147	MEDN2048	MEDN1796	MEDN1906	MEDN1448	MEDP1691	MEDP1695	MEDP2143	MEDN0659	MEDN0362	MEDN0758	MEDP0297	MEDN1886	MEDN1415	MEDP2339	MEDN1935	MEDN0745	MEDP1663	MEDN0748	MEDN0856	MEDP0084	MEDP0831	MEDP1657	MEDN1311	MEDN0429	MEDP1753	MEDP1434	MEDP1857	MEDP0336	MEDP1326	MEDP1702	MEDP1171	MEDN0323	MEDN1213	MEDP1391	MEDN2182	MEDN1428	MEDN0128	MEDP1407	MEDP0307	MEDP1251	MEDP1333	MEDP1334	MEDP1389	MEDN1413	MEDP1701	MEDP1339	MEDN1932	MEDP1399	MEDN0294	MEDN1643	MEDN0383	MEDN0752	MEDN0750	MEDN0756	MEDP1659	MEDP1165	MEDP1146	MEDN1690	MEDN0290	MEDP1658	MEDN0375	MEDN1416	MEDP1322	MEDP1412	MEDN0245	MEDP1418	MEDP1692	MEDP0494	MEDN0759	MEDN1597	MEDN1691	MEDN1648	MEDP1518	MEDN1269	MEDN1270	MEDN1278	MEDN1277	MEDN0390	MEDN1069	MEDN1688	MEDN1840	MEDN0378	MEDP1901	MEDP1428
-save "D:\真菌分析\data_pre\metabolism_predict_cluster34_18.dta",replace
-restore
-
 *---------Validate on the 2018 datasets after remove the repeat datasets--
 
 use "D:\真菌分析\data_pre\metabolism_predict_cluster34_18.dta",clear
@@ -460,32 +354,6 @@ drop _merge
 save "D:\真菌分析\data_pre\metabolism_predict_cluster34_18_sens.dta",replace
  
 
-*---AUC results confirm(SampleID)---
-
-*--Discovery--
-
-import excel "D:\真菌分析\Final results\predict_update\metabolis_fungi_discovery_auc.xlsx", sheet("Sheet1") firstrow clear 
-merge 1:1 SampleID using "D:\真菌分析\data_pre\metabolism_predict_cluster34.dta"
-tab outcome label // OK
-
-*--Validation-all--
-
-import excel "D:\真菌分析\Final results\predict_update\metabolis_fungi_validation_select_auc.xlsx", sheet("Sheet1") firstrow clear 
-merge 1:1 SampleID using "D:\真菌分析\data_pre\metabolism_predict_cluster34_18.dta"
-tab outcome label // OK
-keep if _merge==3
-drop _merge
-merge 1:1 SampleID using "D:\真菌分析\data_pre\metabolism_cluster.dta"
-keep if _merge==3
-tab cluster_15 cluster_18 // only 4 participants trans from 3 to 4,and same number participants for 4 to 3.
-drop if cluster_15==3 | cluster_15==4 
-sort cluster_15 cluster_18
-egen group=group(cluster_15 cluster_18)
-sort group
-by group:su predict
-keep cluster_15 group predict
-export excel using "D:\真菌分析\Plot\data\trans_predict.xlsx",  firstrow(variables) sheet("2018") sheetreplace  
- 
 *----------cluster 3 vs cluster 4 metabolism VIP values------
 
 import excel "D:\CNHS\data\代谢组数据\Repeatdata\1.Data_Assess\all_group\ALL_sample_data_leveled.xlsx", sheet("Sheet1") firstrow clear 
@@ -651,7 +519,7 @@ sort p
 keep if p<0.05
 tab module
 
-*--------------mediation analysis datasets----------
+*-------------2.1.5 -mediation analysis datasets----------
 
 use "D:\真菌分析\data_pre\repeatDMM_15cluster.dta",clear
 merge m:m Idind using  "D:\真菌分析\data_pre\metabolism_15.dta"
@@ -906,136 +774,6 @@ use "`res'", clear
 export excel using "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx",  firstrow(variables) sheet("fungi_diseases") sheetreplace  
 restore
 
-*-------基于18年数据test肠道真菌与代谢物的中介效应----
-
-use  "D:\真菌分析\data_pre\2018_all_phenotype.dta",clear
-rename idind Idind
-merge m:m Idind using  "D:\真菌分析\data_pre\metabolism_18.dta"
-keep if _merge==3
-drop _merge
-merge 1:1 SampleID using "D:\真菌分析\data_pre\2018_repeat_fungi_clr.dta"
-keep if _merge==3
-drop _merge
-merge 1:1 Idind using "D:\真菌分析\data_pre\repeatDMM_18cluster.dta"
-keep if _merge==3
-keep if cluster==3 | cluster==4
-gen outcome=0
-replace outcome=1 if cluster==4
-drop _merge
-
-*--model 2 drop the repeat data--
-
-merge 1:1 SampleID using "D:\真菌分析\data_pre\samplelist.dta"
-keep if _merge==3
-drop _merge
-
-*--model 1: no drop--
-
-save  "D:\真菌分析\data_pre\2018_mediation.dta",replace
-
-logit t2d g220 age i.sex BMI,or
-logit t2d MEDN0378 age i.sex BMI,or
-*logit incident_t2d g220 age i.sex BMI,or // 原始所有数据集里显著
-keep SampleID outcome age sex BMI t2d hyp MEDN0378 MEDN0390 MEDN1269 MEDN1270 MEDN1840 MEDP0026 MEDP1778
-qui foreach var of varlist MEDN0378-MEDP1778{
-	egen d_`var'=std(`var')
-	drop `var'
-	rename d_`var' `var'
-}
-
-preserve
-keep SampleID MEDN0378-MEDP1778
-save "D:\真菌分析\data_pre\meta18_data.dta",replace 
-restore
-
-
-tempname coef
-tempfile res
- postfile `coef' str200(outcome metabolism)  float(n rr lul uul p) using "`res'", replace
- foreach outcome of varlist t2d hyp  {
-foreach var of varlist MEDN0378-MEDP1778 {
- logit `outcome' `var' age i.sex BMI
-test `var'
- post `coef'   ("`outcome'") ("`var'")  (e(N)) (exp(_b[`var']))  (exp(_b[`var']-1.96*_se[`var']))  (exp(_b[`var']+1.96*_se[`var']))  (chi2tail(1,(_b[`var']/_se[`var'])^2))  
-}
-}
-  postclose `coef'
-  preserve
-use "`res'", clear
-export excel using "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx",  firstrow(variables) sheet("metabolism_diseases_18") sheetreplace  
-restore
-
-*--mapping the metabolism modules--
-
-import excel "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx", sheet("metabolism_diseases_18") firstrow clear 
-rename metabolism Index
-merge m:m Index using  "D:\真菌分析\data_pre\module_metabolism_list.dta" 
-sort p
-gen mark=color+outcome
-export excel using "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx",  firstrow(variables) sheet("metabolism_diseases_18_mpping") sheetreplace  
-
-*---driven fungi and metabolism--------
-
-use  "D:\真菌分析\data_pre\2018_mediation.dta",clear
-keep SampleID  outcome age sex BMI t2d hyp g146  g220 g225 MEDN0378 MEDN0390 MEDN1269 MEDN1270 MEDN1840 MEDP0026 MEDP1778
-tab outcome,missing
-drop if outcome==.
-qui foreach var of varlist MEDN0378-MEDP1778 g146-g225{
-	egen d_`var'=std(`var')
-	drop `var'
-	rename d_`var' `var'
-}
-
-preserve
-keep SampleID hyp t2d
-save "D:\真菌分析\data_pre\diseases18_data.dta",replace 
-restore
-
-preserve
-keep SampleID g146-g225
-save "D:\真菌分析\data_pre\fungi18_data.dta",replace 
-restore
-
-preserve
-keep SampleID age sex BMI
-save "D:\真菌分析\data_pre\cov18_data.dta",replace 
-restore
-
-tempname coef
- tempfile res
- postfile `coef' str200(module micro)  float(n rr lul uul p) using "`res'", replace
- foreach module of varlist  MEDN0378-MEDP1778 {
-foreach var of varlist g146-g225{
-regress `module' `var' age i.sex BMI
- test `var'
- post `coef'   ("`module'") ("`var'")  (e(N)) (_b[`var'])  (_b[`var']-1.96*_se[`var'])  (_b[`var']+1.96*_se[`var'])  (chi2tail(1,(_b[`var']/_se[`var'])^2)) 
-}
-}
- postclose `coef'
- preserve
-use "`res'", clear
-
-export excel using "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx",  firstrow(variables) sheet("fungi_metabolism_18") sheetreplace  
-restore
-
-*----driven fungi and diseases---
-
-tempname coef
-tempfile res
- postfile `coef' str200(outcome metabolism)  float(n rr lul uul p) using "`res'", replace
- foreach outcome of varlist t2d hyp  {
-foreach var of varlist g146-g225 {
- logit `outcome' `var' age i.sex BMI
-test `var'
- post `coef'   ("`outcome'") ("`var'")  (e(N)) (exp(_b[`var']))  (exp(_b[`var']-1.96*_se[`var']))  (exp(_b[`var']+1.96*_se[`var']))  (chi2tail(1,(_b[`var']/_se[`var'])^2))  
-}
-}
-  postclose `coef'
-  preserve
-use "`res'", clear
-export excel using "D:\真菌分析\Final results\All data\metabolism\mediation_input.xlsx",  firstrow(variables) sheet("fungi_diseases_18") sheetreplace  
-restore
-
 *------------Results combined--------------
 
 *--module results---
@@ -1091,56 +829,6 @@ rename outcome outcome_d
 rename pval_mediate pval_mediate_d
 save  "D:\真菌分析\data_pre\mediate_sig_discovery.dta",replace
 
-*--validation cohort
-
-import delimited "D:\真菌分析\Final results\All data\metabolism\代谢物中介分析结果_18_select.csv",  clear 
-keep if pval_mediate<0.05 // drop 2
-drop  coefci_mediate pval_direct coefci_direct pval_total coefci_total pval_ratio coefci_ratio pval_direct_inverse
-merge m:m metabolism using  "D:\真菌分析\data_pre\metabolism_names.dta"
-keep if _merge==3
-drop _merge
-rename fungi code_repeat
-merge m:m code_repeat using "D:\真菌分析\data_pre\fungi_mapping_all_repeat.dta"
-keep if _merge==3
-keep g Compounds 物质 pval_mediate outcome coef_mediate rr rr_metabolismdisease coef_ratio
-order g Compounds 物质 pval_mediate outcome coef_mediate rr rr_metabolismdisease coef_ratio
-gen mark=g+Compounds
-rename coef_mediate mediabe_v
-rename rr rr_v
-rename rr_metabolismdisease rr_metadis_v
-rename coef_ratio coef_ratio_v
-rename outcome outcome_v
-rename pval_mediate pval_mediate_v
-merge 1:1 mark using  "D:\真菌分析\data_pre\mediate_sig_discovery.dta"
-keep if _merge==3 //2
-order g Compounds 物质 outcome_d outcome_v pval_mediate_d pval_mediate_v coef_ratio_d coef_ratio_v rr_d rr_v rr_metadis_d rr_metadis_v
-save  "D:\真菌分析\data_pre\mediate_sig_all.dta",replace
-
-*----sensitive analysis--
-
-import delimited "D:\真菌分析\Final results\All data\metabolism\代谢物中介分析结果_18_select.csv",  clear 
-keep if pval_mediate<0.1 // drop 6
-drop  coefci_mediate pval_direct coefci_direct pval_total coefci_total pval_ratio coefci_ratio pval_direct_inverse
-merge m:m metabolism using  "D:\真菌分析\data_pre\metabolism_names.dta"
-keep if _merge==3
-drop _merge
-rename fungi code_repeat
-merge m:m code_repeat using "D:\真菌分析\data_pre\fungi_mapping_all_repeat.dta"
-keep if _merge==3
-keep g Compounds 物质 pval_mediate outcome coef_mediate rr rr_metabolismdisease coef_ratio
-order g Compounds 物质 pval_mediate outcome coef_mediate rr rr_metabolismdisease coef_ratio
-gen mark=g+Compounds
-rename coef_mediate mediabe_v
-rename rr rr_v
-rename rr_metabolismdisease rr_metadis_v
-rename coef_ratio coef_ratio_v
-rename outcome outcome_v
-rename pval_mediate pval_mediate_v
-merge 1:1 mark using  "D:\真菌分析\data_pre\mediate_sig_discovery.dta"
-keep if _merge==3 //2
-order g Compounds 物质 outcome_d outcome_v pval_mediate_d pval_mediate_v coef_ratio_d coef_ratio_v rr_d rr_v rr_metadis_d rr_metadis_v
-save  "D:\真菌分析\data_pre\mediate_sig_all_sensi.dta",replace
-
 *----------dataset for the mediation results plot---
 
 import delimited "D:\真菌分析\Final results\All data\metabolism\代谢物中介分析结果.csv",  clear 
@@ -1178,78 +866,6 @@ merge m:m M  using "D:\真菌分析\data_pre\media2.dta"
 order X M Y rr_xm rr 
 save "D:\真菌分析\data_pre\mediation_input.dta",replace
 
-*----------validate the results on the independent 2018 dataset--
-
-import delimited "D:\真菌分析\Final results\All data\metabolism\代谢物中介分析结果_18_select.csv",  clear 
-keep if pval_mediate<0.05 // drop 2
-keep if pval_mediate_inverse>0.05 // drop 0
-merge m:m metabolism using  "D:\真菌分析\data_pre\metabolism_names.dta"
-keep if _merge==3
-drop _merge
-rename fungi code_repeat
-merge m:m code_repeat using "D:\真菌分析\data_pre\fungi_mapping_all_repeat.dta"
-keep if _merge==3
-split (g), parse(;) 
-drop if coef_ratio>1
-
-preserve
-keep g6  Compounds rr coef_ratio
-rename g6 X
-rename Compounds M
-save  "D:\真菌分析\data_pre\media1_validate.dta",replace 
-restore
-
-preserve
-keep outcome  Compounds rr_metabolismdisease  
-rename Compounds M
-rename outcome Y
-rename rr_metabolismdisease rr
-save  "D:\真菌分析\data_pre\media2_validate.dta",replace 
-restore
-
-use  "D:\真菌分析\data_pre\media1_validate.dta",clear
-rename rr rr_xm
-merge m:m M  using "D:\真菌分析\data_pre\media2_validate.dta"
-order X M Y rr_xm rr 
-save "D:\真菌分析\data_pre\mediation_input_validate.dta",replace
-
-*-------Validate the results in the all 2018 data
-
-import delimited "D:\真菌分析\Final results\All data\metabolism\代谢物中介分析结果_18_all.csv",  clear 
-keep if pval_mediate<0.05 // drop 6
-keep if pval_mediate_inverse>0.05 // drop 2
-merge m:m metabolism using  "D:\真菌分析\data_pre\metabolism_names.dta"
-keep if _merge==3
-drop _merge
-rename fungi code_repeat
-merge m:m code_repeat using "D:\真菌分析\data_pre\fungi_mapping_all_repeat.dta"
-keep if _merge==3
-split (g), parse(;) 
-drop if coef_ratio>1
-
-preserve
-keep g6  Compounds rr coef_ratio
-rename g6 X
-rename Compounds M
-save  "D:\真菌分析\data_pre\media1_validate_2.dta",replace 
-restore
-
-preserve
-keep outcome  Compounds rr_metabolismdisease  
-rename Compounds M
-rename outcome Y
-rename rr_metabolismdisease rr
-save  "D:\真菌分析\data_pre\media2_validate2.dta",replace 
-restore
-
-
-use  "D:\真菌分析\data_pre\media1_validate_2.dta",clear
-rename rr rr_xm
-merge m:m M  using "D:\真菌分析\data_pre\media2_validate2.dta"
-order X M Y rr_xm rr 
-save "D:\真菌分析\data_pre\mediation_input_validate2.dta",replace
-
-
 *--------------3---All data analysis---------
 
 *-----3.1-----PCOA analysis dataset----------
@@ -1263,7 +879,7 @@ import delimited "D:\真菌分析\Final results\All data\fungi_PCA.csv",  clear
 rename sampleid SampleID
 save "D:\真菌分析\data_pre\2015_all_fungi_pc.dta",replace
 
-*------3.8.2--mixed model---------
+*------3.2--mixed model---------
 
 *----fungal features-categries--
 
