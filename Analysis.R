@@ -152,7 +152,7 @@ rownames(metabolism)=metabolism$SampleID
 metabolism<-subset(metabolism,select=-c(SampleID))
 
 fungi<-read_dta("D:\\真菌分析\\data_pre\\outcome_data.dta")
-rownames(fungi)=outcome$SampleID
+rownames(fungi)=fungi$SampleID
 fungi<-subset(fungi,select=-c(SampleID))
 
 diseases<-read_dta("D:\\真菌分析\\data_pre\\diseases_data.dta")
@@ -162,14 +162,17 @@ diseases<-subset(diseases,select=-c(SampleID))
 cov<-read_dta("D:\\真菌分析\\data_pre\\cov_data.dta")
 rownames(cov)=cov$SampleID
 cov<-subset(cov,select=-c(SampleID))
+cov$sex <- as.factor(cov$sex)
+cov$district<-as.factor(cov$district)
+set.seed(1234)  # 设置随机种子，确保每次运行结果一致
 
 for(i in 1:nrow(result)){
   data=data.frame(cbind(fungi,diseases[,as.character(result$outcome[i])],metabolism[,as.character(result$metabolism[i])],cov))
   data=na.omit(data)
-  colnames(data)=c("X","Y","M","age","sex","BMI")
-  model.m=lm(M~X+age+sex+BMI,data)
-  model.y=glm(Y~X+M+age+sex+BMI,data,family=binomial(link="logit"))
-  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot = T,sims = 1000))
+  colnames(data)=c("X","Y","M","age","sex","BMI","district")
+  model.m=lmer(M ~ X + age + sex + BMI + (1 | district), data = data)
+  model.y=glmer(Y ~ X + M + age + sex + BMI + (1 | district), data = data, family = "binomial")
+  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot =FALSE))
   result$Pval_mediate[i]=summary$d.avg.p
   result$coef_mediate[i]=summary$d.avg
   result$coefCI_mediate[i]=summary$d.avg.ci
@@ -183,10 +186,10 @@ for(i in 1:nrow(result)){
   result$coef_ratio[i]=summary$n.avg
   result$coefCI_ratio[i]=summary$n.avg.ci
   #inverse mediate
-  colnames(data)=c("X","M","Y","age","sex","BMI")
-  model.m=glm(M~X+age+sex+BMI,data,family=binomial(link="logit"))
-  model.y=lm(Y~X+M+age+sex+BMI,data)
-  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot = T,sims = 1000))
+  colnames(data)=c("X","M","Y","age","sex","BMI","district")
+  model.m=glmer(M~X+age+sex+BMI+ (1 | district), data = data, family = "binomial")
+  model.y=lmer(Y~X+M+age+sex+BMI+ (1 | district), data = data)
+  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot =FALSE ))
   result$Pval_mediate_inverse[i]=summary$d.avg.p
   result$Pval_direct_inverse[i]=summary$z.avg.p
 }
@@ -195,12 +198,12 @@ result$Qval_mediate=p.adjust(result$Pval_mediate,method = "BH")
 result$Qval_mediate_inverse=p.adjust(result$Pval_mediate_inverse,method = "BH")
 write.table(result,file = "D:\\真菌分析\\Final results\\All data\\代谢模块中介分析结果.csv",quote = F,sep = "\t",row.names = F)
 
-
 #--step2: individual metabolisms analyses--
 
 df_my<- readxl::read_xlsx("D:\\真菌分析\\Final results\\All data\\metabolism\\mediation_input.xlsx",sheet = "metabolism_diseases_mpping") 
 df_my<-subset(df_my, outcome!="dys") 
-df_my<-subset(df_my, color!="brown") 
+df_my<-subset(df_my, outcome!="hyp") 
+df_my<-subset(df_my, color!="brown") # brown完全遮掩，故摒弃
 p_adjust = p.adjust(df_my$p,method="BH")
 df_my = as.data.frame(cbind(df_my, p_adjust))
 
@@ -228,20 +231,22 @@ fungi<-subset(fungi,select=-c(SampleID))
 
 diseases<-read_dta("D:\\真菌分析\\data_pre\\diseases_data.dta")
 rownames(diseases)=diseases$SampleID
-diseases<-subset(diseases,select=-c(SampleID))
+diseases<-subset(diseases,select=-c(SampleID,hyp))
 
 cov<-read_dta("D:\\真菌分析\\data_pre\\cov_data.dta")
 rownames(cov)=cov$SampleID
 cov<-subset(cov,select=-c(SampleID))
+cov$district<-as.factor(cov$district)
+set.seed(123)  # 设置随机种子，确保每次运行结果一致
 
 for(i in 1:nrow(result)){
   data=data.frame(cbind(fungi[,as.character(result$fungi[i])],diseases[,as.character(result$outcome[i])],metabolism[,as.character(result$metabolism[i])],cov))
   data=na.omit(data)
   #diet influence meta through microbiome
-  colnames(data)=c("X","Y","M","age","sex","BMI")
-  model.m=lm(M~X+age+sex+BMI,data)
-  model.y=glm(Y~X+M+age+sex+BMI,data,family=binomial(link="logit"))
-  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot = T,sims = 1000))
+  colnames(data)=c("X","Y","M","age","sex","BMI","district")
+  model.m=lmer(M ~ X + age + sex + BMI + (1 | district), data = data)
+  model.y=glmer(Y ~ X + M + age + sex + BMI + (1 | district), data = data, family = binomial)
+  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot =FALSE))
   result$Pval_mediate[i]=summary$d.avg.p
   result$coef_mediate[i]=summary$d.avg
   result$coefCI_mediate[i]=summary$d.avg.ci
@@ -255,14 +260,14 @@ for(i in 1:nrow(result)){
   result$coef_ratio[i]=summary$n.avg
   result$coefCI_ratio[i]=summary$n.avg.ci
   #inverse mediate
-  colnames(data)=c("X","M","Y","age","sex","BMI")
-  model.m=glm(M~X+age+sex+BMI,data,family=binomial(link="logit"))
-  model.y=lm(Y~X+M+age+sex+BMI,data)
-  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot = T,sims = 1000))
+  colnames(data)=c("X","M","Y","age","sex","BMI","district")
+  model.m=glmer(M~X+age+sex+BMI+ (1 | district), data = data, family = binomial)
+  model.y=lmer(Y~X+M+age+sex+BMI+ (1 | district), data = data)
+  summary=summary(mediate(model.m ,model.y,treat = "X", mediator = "M",boot =FALSE ))
   result$Pval_mediate_inverse[i]=summary$d.avg.p
   result$Pval_direct_inverse[i]=summary$z.avg.p
 }
 
 result$Qval_mediate=p.adjust(result$Pval_mediate,method = "BH")
 result$Qval_mediate_inverse=p.adjust(result$Pval_mediate_inverse,method = "BH")
-write.table(result,file = "D:\\真菌分析\\Final results\\All data\\代谢物中介分析结果.csv",quote = F,sep = "\t",row.names = F)
+write.table(result,file = "D:\\真菌分析\\Final results\\All data\\代谢物中介分析结果1.csv",quote = F,sep = "\t",row.names = F)
